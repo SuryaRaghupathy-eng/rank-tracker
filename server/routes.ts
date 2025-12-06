@@ -17,7 +17,7 @@ function getTimeRangeParam(timeRange: TimeRange): string | undefined {
   }
 }
 
-async function searchSerper(keyword: string, timeRange?: TimeRange): Promise<SerperSearchResponse> {
+async function searchSerper(keyword: string, timeRange?: TimeRange, country?: string): Promise<SerperSearchResponse> {
   const payload: Record<string, string> = {
     q: keyword,
   };
@@ -25,6 +25,10 @@ async function searchSerper(keyword: string, timeRange?: TimeRange): Promise<Ser
   const tbs = timeRange ? getTimeRangeParam(timeRange) : undefined;
   if (tbs) {
     payload.tbs = tbs;
+  }
+
+  if (country) {
+    payload.gl = country;
   }
 
   const response = await fetch("https://google.serper.dev/search", {
@@ -106,7 +110,7 @@ export async function registerRoutes(
         });
       }
 
-      const { keywords, websiteUrl, compareEnabled, compareTimeRange } = validationResult.data;
+      const { keywords, websiteUrl, country, compareEnabled, compareTimeRange } = validationResult.data;
 
       if (!SERPER_API_KEY) {
         return res.status(500).json({
@@ -131,7 +135,7 @@ export async function registerRoutes(
       for (const keyword of keywordList) {
         try {
           // Get current rankings
-          const currentSearch = await searchSerper(keyword, "current");
+          const currentSearch = await searchSerper(keyword, "current", country);
           const currentResult = findWebsitePosition(currentSearch, websiteUrl);
 
           let previousPosition: number | null = null;
@@ -140,7 +144,7 @@ export async function registerRoutes(
           // If comparison is enabled, get previous period rankings
           if (compareEnabled && compareTimeRange) {
             try {
-              const previousSearch = await searchSerper(keyword, compareTimeRange);
+              const previousSearch = await searchSerper(keyword, compareTimeRange, country);
               const previousResult = findWebsitePosition(previousSearch, websiteUrl);
               previousPosition = previousResult.position;
 

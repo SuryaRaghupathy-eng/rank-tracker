@@ -22,7 +22,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { batchKeywordSchema, type BatchKeywordInput, type TimeRange } from "@shared/schema";
+import { batchKeywordSchema, type BatchKeywordInput, type TimeRange, COUNTRY_LIST } from "@shared/schema";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface KeywordFormProps {
   onSubmit: (data: BatchKeywordInput) => void;
@@ -35,6 +37,7 @@ export function KeywordForm({ onSubmit, isLoading = false }: KeywordFormProps) {
     defaultValues: {
       keywords: "",
       websiteUrl: "",
+      country: "us",
       compareEnabled: false,
       compareTimeRange: "week",
     },
@@ -107,6 +110,57 @@ export function KeywordForm({ onSubmit, isLoading = false }: KeywordFormProps) {
                           {...field}
                         />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <Globe className="h-4 w-4 text-muted-foreground" />
+                        Country
+                        <Badge variant="secondary" className="text-xs">gl</Badge>
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger 
+                            className="h-11"
+                            data-testid="select-country"
+                          >
+                            <SelectValue placeholder="Select a country">
+                              {field.value && (
+                                <span className="flex items-center gap-2">
+                                  <span className="uppercase font-medium text-xs">{field.value}</span>
+                                  {COUNTRY_LIST.find(c => c.code === field.value)?.name} ({field.value})
+                                </span>
+                              )}
+                            </SelectValue>
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <ScrollArea className="h-72">
+                            {COUNTRY_LIST.map((country) => (
+                              <SelectItem 
+                                key={country.code} 
+                                value={country.code}
+                                data-testid={`select-country-${country.code}`}
+                              >
+                                <span className="flex items-center gap-2">
+                                  <span className="uppercase font-medium text-xs w-6">{country.code}</span>
+                                  {country.name} ({country.code})
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </ScrollArea>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
