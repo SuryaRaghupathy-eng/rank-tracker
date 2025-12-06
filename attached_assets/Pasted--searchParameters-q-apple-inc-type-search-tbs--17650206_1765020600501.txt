@@ -1,0 +1,81 @@
+{
+    "searchParameters": {
+        "q": "apple inc",
+        "type": "search",
+        "tbs": "qdr:m",
+        "engine": "google"
+    },
+    "organic": [
+        {
+            "title": "Investor Relations - Apple",
+            "link": "https://investor.apple.com/investor-relations/default.aspx",
+            "snippet": "FY 25 Fourth Quarter Results. Apple announced results and business updates for the quarter ended September 27, 2025. View the press release ...",
+            "date": "Nov 19, 2025",
+            "position": 1
+        },
+        {
+            "title": "What the heck is going on at Apple?",
+            "link": "https://www.cnn.com/2025/12/06/tech/apple-tim-cook-leadership-changes",
+            "snippet": "Apple for decades has been known for a consistent string of design-forward, tech-defining consumer products that have shaped how people use technology.",
+            "date": "3 hours ago",
+            "position": 2
+        },
+        {
+            "title": "Apple Inc. (AAPL)",
+            "link": "https://finance.yahoo.com/quote/AAPL/",
+            "snippet": "Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories worldwide.",
+            "date": "Nov 27, 2025",
+            "position": 3
+        },
+        {
+            "title": "Apple announces departure of Lisa Jackson and Kate Adams",
+            "link": "https://www.cnbc.com/2025/12/04/apple-announces-departure-lisa-jackson-kate-adams.html",
+            "snippet": "Apple's general counsel, Kate Adams, and its vice president for environment, policy, and social initiatives, Lisa Jackson, are retiring from the company.",
+            "date": "2 days ago",
+            "position": 4
+        },
+        {
+            "title": "Apple Inc. (AAPL) Stock Price Today - WSJ",
+            "link": "https://www.wsj.com/market-data/quotes/AAPL?gaa_at=eafs&gaa_n=AWEtsqccUEOEZRMDtOLconQ2Ef_8iFMb1onMYaluwJ0j5DBOfNAAnlElsF7T&gaa_ts=6934172a&gaa_sig=9lOAdtMW0sxPIrWX9v0KE-NybT5YDOiDrjFGfj68qybBHfPIu41-XALwkK0z69VFJaOenbEfzlk2Ft36XGZepg%3D%3D",
+            "snippet": "Apple Inc. engages in the design, manufacture, and sale of smartphones, personal computers, tablets, wearables and accessories, and other varieties of related ...",
+            "date": "2 hours ago",
+            "position": 5
+        },
+        {
+            "title": "Newsroom - Apple",
+            "link": "https://www.apple.com/newsroom/",
+            "snippet": "The official source for news about Apple, from Apple. Read press releases, get updates, watch video and download images.",
+            "date": "Nov 20, 2025",
+            "position": 6
+        },
+        {
+            "title": "Apple announces executive transitions",
+            "link": "https://www.apple.com/newsroom/2025/12/apple-announces-executive-transitions/",
+            "snippet": "Apple today announced that Jennifer Newstead will become Apple's general counsel on March 1, 2026, following a transition of duties from Kate Adams.",
+            "date": "2 days ago",
+            "position": 7
+        },
+        {
+            "title": "Apple | AAPL Stock Price, Company Overview & News",
+            "link": "https://www.forbes.com/companies/apple/",
+            "snippet": "Apple Inc. engages in the design, manufacture, and sale of smartphones, personal computers, tablets, wearables and accessories, and other variety of related ...",
+            "date": "11 hours ago",
+            "position": 8
+        },
+        {
+            "title": "Apple Inc. Stock Quote (U.S.: Nasdaq) - AAPL",
+            "link": "https://www.marketwatch.com/investing/stock/aapl?gaa_at=eafs&gaa_n=AWEtsqd6PmF6DubZBbfQzh3DRFAZ7TAb7C97lNSXBuUBzTvWUQJkOG4vX1xJ&gaa_ts=6934172a&gaa_sig=zEZGDleLBtdzehzDWEaajekKxesa1o4fehdqrpqjPFIVMN7DGCqduFmHRhvtlDs4JZ02ltXBoLP-iVZF9elWaA%3D%3D",
+            "snippet": "Apple Inc. engages in the design, manufacture, and sale of smartphones, personal computers, tablets, wearables and accessories, and other varieties of related ...",
+            "date": "3 hours ago",
+            "position": 9
+        },
+        {
+            "title": "Search Jobs - United States - Jobs - Careers at Apple",
+            "link": "https://jobs.apple.com/en-us/search?location=united-states-USA",
+            "snippet": "Explore all United States jobs at Apple. Create a profile and apply today.",
+            "date": "3 hours ago",
+            "position": 10
+        }
+    ],
+    "credits": 1
+}
