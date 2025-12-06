@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { batchKeywordSchema, type RankingResult, type TimeRange, type SerperSearchResponse } from "@shared/schema";
+import { batchKeywordSchema, insertSavedKeywordSchema, type RankingResult, type TimeRange, type SerperSearchResponse } from "@shared/schema";
+import { storage } from "./storage";
 
 const SERPER_API_KEY = process.env.SERPER_API_KEY;
 
@@ -192,6 +193,132 @@ export async function registerRoutes(
       return res.status(500).json({
         error: "Failed to check rankings",
         message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  // Get all saved keywords
+  app.get("/api/keywords", async (_req, res) => {
+    try {
+      const keywords = await storage.getSavedKeywords();
+      return res.json(keywords);
+    } catch (error) {
+      console.error("Error fetching keywords:", error);
+      return res.status(500).json({
+        error: "Failed to fetch keywords",
+      });
+    }
+  });
+
+  // Save a new keyword
+  app.post("/api/keywords", async (req, res) => {
+    try {
+      const validationResult = insertSavedKeywordSchema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        return res.status(400).json({
+          error: "Validation failed",
+          details: validationResult.error.errors,
+        });
+      }
+
+      const saved = await storage.createSavedKeyword(validationResult.data);
+      return res.status(201).json(saved);
+    } catch (error) {
+      console.error("Error saving keyword:", error);
+      return res.status(500).json({
+        error: "Failed to save keyword",
+      });
+    }
+  });
+
+  // Delete a saved keyword
+  app.delete("/api/keywords/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid keyword ID" });
+      }
+
+      const deleted = await storage.deleteSavedKeyword(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Keyword not found" });
+      }
+
+      return res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting keyword:", error);
+      return res.status(500).json({
+        error: "Failed to delete keyword",
+      });
+    }
+  });
+
+  // Get ranking history for a keyword
+  app.get("/api/keywords/:id/history", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid keyword ID" });
+      }
+
+      const keyword = await storage.getSavedKeyword(id);
+      if (!keyword) {
+        return res.status(404).json({ error: "Keyword not found" });
+      }
+
+      const history = await storage.getRankingHistory(id);
+      return res.json({ keyword, history });
+    } catch (error) {
+      console.error("Error fetching history:", error);
+      return res.status(500).json({
+        error: "Failed to fetch history",
+      });
+    }
+  });
+
+  // Check ranking for a saved keyword and save to history
+  app.post("/api/keywords/:id/check", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid keyword ID" });
+      }
+
+      const keyword = await storage.getSavedKeyword(id);
+      if (!keyword) {
+        return res.status(404).json({ error: "Keyword not found" });
+      }
+
+      if (!SERPER_API_KEY) {
+        return res.status(500).json({
+          error: "Serper API key not configured",
+        });
+      }
+
+      const searchResult = await searchSerper(keyword.keyword, "current");
+      const result = findWebsitePosition(searchResult, keyword.websiteUrl);
+
+      // Save to history
+      const historyRecord = await storage.createRankingHistory({
+        keywordId: id,
+        position: result.position,
+        title: result.title,
+        snippet: result.snippet,
+        foundUrl: result.foundUrl,
+      });
+
+      return res.json({
+        keyword,
+        result: {
+          ...result,
+          checkedAt: historyRecord.checkedAt,
+        },
+      });
+    } catch (error) {
+      console.error("Error checking keyword:", error);
+      return res.status(500).json({
+        error: "Failed to check keyword",
       });
     }
   });

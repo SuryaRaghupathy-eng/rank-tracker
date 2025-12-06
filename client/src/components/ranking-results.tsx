@@ -1,6 +1,7 @@
-import { TrendingUp, TrendingDown, Minus, ExternalLink, Search, AlertCircle } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, ExternalLink, Search, AlertCircle, Bookmark, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -10,6 +11,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { RankingResult } from "@shared/schema";
 
 interface RankingResultsProps {
