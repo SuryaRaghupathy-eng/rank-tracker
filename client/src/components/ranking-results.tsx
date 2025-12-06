@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Minus, ExternalLink, Search, AlertCircle, Bookmark, Loader2, Download, FileText } from "lucide-react";
+import { ExternalLink, Search, AlertCircle, Bookmark, Loader2, Download, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +20,6 @@ import type { RankingResult } from "@shared/schema";
 interface RankingResultsProps {
   results: RankingResult[];
   isLoading?: boolean;
-  compareEnabled?: boolean;
 }
 
 function PositionBadge({ position }: { position: number | null }) {
@@ -49,42 +48,6 @@ function PositionBadge({ position }: { position: number | null }) {
     >
       {position}
     </div>
-  );
-}
-
-function ChangeIndicator({ change }: { change: number | null }) {
-  if (change === null) {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm text-muted-foreground">
-        <Minus className="h-3.5 w-3.5" />
-        N/A
-      </span>
-    );
-  }
-
-  if (change === 0) {
-    return (
-      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-muted text-muted-foreground font-medium">
-        <Minus className="h-3.5 w-3.5" />
-        No change
-      </span>
-    );
-  }
-
-  if (change > 0) {
-    return (
-      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-medium border border-emerald-500/20">
-        <TrendingUp className="h-3.5 w-3.5" />
-        +{change}
-      </span>
-    );
-  }
-
-  return (
-    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-red-500/15 text-red-600 dark:text-red-400 font-medium border border-red-500/20">
-      <TrendingDown className="h-3.5 w-3.5" />
-      {change}
-    </span>
   );
 }
 
@@ -127,11 +90,11 @@ function escapeCSV(value: string): string {
 }
 
 function exportResultsToCSV(results: RankingResult[]) {
-  const rows: string[] = ["Keyword,Website URL,Position,Title,Checked At"];
+  const rows: string[] = ["Keyword,Website URL,Position,Title,Time Frame,Checked At"];
   
   results.forEach((result) => {
     rows.push(
-      `${escapeCSV(result.keyword)},${escapeCSV(result.websiteUrl)},${result.currentPosition ?? "Not Found"},${escapeCSV(result.title ?? "")},${escapeCSV(result.checkedAt)}`
+      `${escapeCSV(result.keyword)},${escapeCSV(result.websiteUrl)},${result.position ?? "Not Found"},${escapeCSV(result.title ?? "")},${result.timeFrame},${escapeCSV(result.checkedAt)}`
     );
   });
   
@@ -189,7 +152,7 @@ function exportResultsToPDF(results: RankingResult[]) {
             <tr>
               <td>${escapeHTML(r.keyword)}</td>
               <td>${escapeHTML(r.websiteUrl)}</td>
-              <td>${r.currentPosition ? `#${r.currentPosition}` : '<span class="not-found">Not Found</span>'}</td>
+              <td>${r.position ? `#${r.position}` : '<span class="not-found">Not Found</span>'}</td>
               <td>${escapeHTML(r.title ?? '-')}</td>
             </tr>
           `).join('')}
@@ -207,7 +170,6 @@ function exportResultsToPDF(results: RankingResult[]) {
 export function RankingResults({
   results,
   isLoading = false,
-  compareEnabled = false,
 }: RankingResultsProps) {
   const { toast } = useToast();
   
@@ -231,6 +193,7 @@ export function RankingResults({
       });
     },
   });
+
   if (isLoading) {
     return (
       <Card className="border-card-border">
@@ -257,8 +220,8 @@ export function RankingResults({
     );
   }
 
-  const foundResults = results.filter((r) => r.currentPosition !== null);
-  const notFoundResults = results.filter((r) => r.currentPosition === null);
+  const foundResults = results.filter((r) => r.position !== null);
+  const notFoundResults = results.filter((r) => r.position === null);
 
   return (
     <Card className="border-card-border">
@@ -305,18 +268,8 @@ export function RankingResults({
                   Website URL
                 </TableHead>
                 <TableHead className="w-1/6 text-center font-semibold text-xs uppercase tracking-wide">
-                  Current Position
+                  Position
                 </TableHead>
-                {compareEnabled && (
-                  <>
-                    <TableHead className="w-1/6 text-center font-semibold text-xs uppercase tracking-wide">
-                      Previous Position
-                    </TableHead>
-                    <TableHead className="w-1/6 text-center font-semibold text-xs uppercase tracking-wide">
-                      Change
-                    </TableHead>
-                  </>
-                )}
                 <TableHead className="w-20 text-center font-semibold text-xs uppercase tracking-wide">
                   Actions
                 </TableHead>
@@ -358,29 +311,15 @@ export function RankingResults({
                     ) : (
                       <span className="text-sm text-muted-foreground flex items-center gap-1">
                         <AlertCircle className="h-3.5 w-3.5" />
-                        Not found in top results
+                        Not found in top 100 results
                       </span>
                     )}
                   </TableCell>
                   <TableCell className="py-4">
                     <div className="flex justify-center">
-                      <PositionBadge position={result.currentPosition} />
+                      <PositionBadge position={result.position} />
                     </div>
                   </TableCell>
-                  {compareEnabled && (
-                    <>
-                      <TableCell className="py-4">
-                        <div className="flex justify-center">
-                          <PositionBadge position={result.previousPosition} />
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-4">
-                        <div className="flex justify-center">
-                          <ChangeIndicator change={result.change} />
-                        </div>
-                      </TableCell>
-                    </>
-                  )}
                   <TableCell className="py-4">
                     <div className="flex justify-center">
                       <Button

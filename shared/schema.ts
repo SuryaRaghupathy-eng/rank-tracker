@@ -63,16 +63,22 @@ export const insertRankingHistorySchema = createInsertSchema(rankingHistory).omi
 export type InsertRankingHistory = z.infer<typeof insertRankingHistorySchema>;
 export type RankingHistory = typeof rankingHistory.$inferSelect;
 
-// Keyword tracking types
-export const timeRangeSchema = z.enum(["current", "week", "month"]);
-export type TimeRange = z.infer<typeof timeRangeSchema>;
+// Keyword tracking types - timeFrame uses h (hour), d (day), w (week), m (month) format
+export const timeFrameSchema = z.enum(["none", "h", "d", "w", "m"]);
+export type TimeFrame = z.infer<typeof timeFrameSchema>;
+
+export const TIME_FRAME_OPTIONS: { value: TimeFrame; label: string }[] = [
+  { value: "none", label: "Any Time" },
+  { value: "h", label: "Past Hour" },
+  { value: "d", label: "Past 24 Hours" },
+  { value: "w", label: "Past Week" },
+  { value: "m", label: "Past Month" },
+];
 
 export const keywordTrackingSchema = z.object({
   keyword: z.string().min(1, "Keyword is required"),
   websiteUrl: z.string().url("Please enter a valid URL"),
-  timeRange: timeRangeSchema.optional().default("current"),
-  compareEnabled: z.boolean().optional().default(false),
-  compareTimeRange: timeRangeSchema.optional(),
+  timeFrame: timeFrameSchema.optional().default("none"),
 });
 
 export type KeywordTracking = z.infer<typeof keywordTrackingSchema>;
@@ -80,14 +86,11 @@ export type KeywordTracking = z.infer<typeof keywordTrackingSchema>;
 export const rankingResultSchema = z.object({
   keyword: z.string(),
   websiteUrl: z.string(),
-  currentPosition: z.number().nullable(),
-  previousPosition: z.number().nullable(),
-  change: z.number().nullable(),
+  position: z.number().nullable(),
   title: z.string().nullable(),
   snippet: z.string().nullable(),
   foundUrl: z.string().nullable(),
-  timeRange: timeRangeSchema,
-  compareTimeRange: timeRangeSchema.nullable(),
+  timeFrame: timeFrameSchema,
   checkedAt: z.string(),
 });
 
@@ -346,8 +349,7 @@ export const batchKeywordSchema = z.object({
   keywords: z.string().min(1, "At least one keyword is required"),
   websiteUrl: z.string().url("Please enter a valid URL"),
   country: countryCodeSchema.optional().default("us"),
-  compareEnabled: z.boolean().optional().default(false),
-  compareTimeRange: timeRangeSchema.optional(),
+  timeFrame: timeFrameSchema.optional().default("none"),
 });
 
 export type BatchKeywordInput = z.infer<typeof batchKeywordSchema>;

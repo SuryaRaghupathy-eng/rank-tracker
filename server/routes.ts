@@ -1,37 +1,25 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { batchKeywordSchema, insertSavedKeywordSchema, type RankingResult, type TimeRange, type SerperSearchResponse } from "@shared/schema";
+import { batchKeywordSchema, insertSavedKeywordSchema, type RankingResult, type TimeFrame, type SerperSearchResponse } from "@shared/schema";
 import { storage } from "./storage";
 
 const SERPER_API_KEY = process.env.SERPER_API_KEY;
 
-function getTimeRangeParam(timeRange: TimeRange): string | undefined {
-  switch (timeRange) {
-    case "week":
-      return "qdr:w";
-    case "month":
-      return "qdr:m";
-    case "current":
-    default:
-      return undefined;
-  }
-}
-
-async function searchSerper(keyword: string, timeRange?: TimeRange, country?: string): Promise<SerperSearchResponse> {
-  const payload: Record<string, string> = {
+async function searchSerper(keyword: string, timeFrame?: TimeFrame, country?: string): Promise<SerperSearchResponse> {
+  const payload: Record<string, string | number> = {
     q: keyword,
+    num: 100,
   };
 
-  const tbs = timeRange ? getTimeRangeParam(timeRange) : undefined;
-  if (tbs) {
-    payload.tbs = tbs;
+  if (timeFrame && timeFrame !== "none") {
+    payload.tbs = `qdr:${timeFrame}`;
   }
 
   if (country) {
     payload.gl = country;
   }
 
-  console.log(`Serper API Request - Keyword: "${keyword}", TimeRange: ${timeRange}, Country: ${country}, TBS: ${tbs}`);
+  console.log(`Serper API Request - Keyword: "${keyword}", TimeFrame: ${timeFrame}, Country: ${country}`);
   console.log(`Payload: ${JSON.stringify(payload)}`);
 
   const response = await fetch("https://google.serper.dev/search", {
@@ -63,7 +51,6 @@ function normalizeUrl(url: string): string {
 function extractBaseDomain(url: string): string {
   const normalized = normalizeUrl(url);
   const domain = normalized.split("/")[0];
-  // Remove www. prefix for comparison
   return domain.replace(/^www\./, "");
 }
 
@@ -80,13 +67,11 @@ function findWebsitePosition(
     const result = organicResults[i];
     const resultBaseDomain = extractBaseDomain(result.link);
     
-    // Match by base domain (e.g., forbes.com matches www.forbes.com)
     if (
       resultBaseDomain === targetBaseDomain ||
       resultBaseDomain.endsWith("." + targetBaseDomain) ||
       targetBaseDomain.endsWith("." + resultBaseDomain)
     ) {
-      // Use result.position if available, otherwise use array index + 1
       const position = result.position ?? (i + 1);
       console.log(`Found match at position ${position}: ${result.link}`);
       return {
@@ -107,7 +92,6 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
-  // Check rankings for multiple keywords
   app.post("/api/rankings/check", async (req, res) => {
     try {
       const validationResult = batchKeywordSchema.safeParse(req.body);
@@ -119,7 +103,7 @@ export async function registerRoutes(
         });
       }
 
-      const { keywords, websiteUrl, country, compareEnabled, compareTimeRange } = validationResult.data;
+      const { keywords, websiteUrl, country, timeFrame } = validationResult.data;
 
       if (!SERPER_API_KEY) {
         return res.status(500).json({
@@ -127,7 +111,6 @@ export async function registerRoutes(
         });
       }
 
-      // Parse keywords (one per line)
       const keywordList = keywords
         .split("\n")
         .map((k) => k.trim())
@@ -143,58 +126,31 @@ export async function registerRoutes(
 
       for (const keyword of keywordList) {
         try {
-          // Get current rankings
-          const currentSearch = await searchSerper(keyword, "current", country);
-          const currentResult = findWebsitePosition(currentSearch, websiteUrl);
-
-          let previousPosition: number | null = null;
-          let change: number | null = null;
-
-          // If comparison is enabled, get previous period rankings
-          if (compareEnabled && compareTimeRange) {
-            try {
-              const previousSearch = await searchSerper(keyword, compareTimeRange, country);
-              const previousResult = findWebsitePosition(previousSearch, websiteUrl);
-              previousPosition = previousResult.position;
-
-              // Calculate change (positive = improvement, negative = decline)
-              if (currentResult.position !== null && previousPosition !== null) {
-                change = previousPosition - currentResult.position;
-              }
-            } catch (error) {
-              console.error(`Error fetching previous rankings for "${keyword}":`, error);
-            }
-          }
+          const searchResult = await searchSerper(keyword, timeFrame, country);
+          const result = findWebsitePosition(searchResult, websiteUrl);
 
           results.push({
             keyword,
             websiteUrl,
-            currentPosition: currentResult.position,
-            previousPosition,
-            change,
-            title: currentResult.title,
-            snippet: currentResult.snippet,
-            foundUrl: currentResult.foundUrl,
-            timeRange: "current",
-            compareTimeRange: compareEnabled ? compareTimeRange || null : null,
+            position: result.position,
+            title: result.title,
+            snippet: result.snippet,
+            foundUrl: result.foundUrl,
+            timeFrame: timeFrame || "none",
             checkedAt: new Date().toISOString(),
           });
 
-          // Small delay to avoid rate limiting
           await new Promise((resolve) => setTimeout(resolve, 200));
         } catch (error) {
           console.error(`Error processing keyword "${keyword}":`, error);
           results.push({
             keyword,
             websiteUrl,
-            currentPosition: null,
-            previousPosition: null,
-            change: null,
+            position: null,
             title: null,
             snippet: null,
             foundUrl: null,
-            timeRange: "current",
-            compareTimeRange: compareEnabled ? compareTimeRange || null : null,
+            timeFrame: timeFrame || "none",
             checkedAt: new Date().toISOString(),
           });
         }
@@ -210,7 +166,6 @@ export async function registerRoutes(
     }
   });
 
-  // Get all saved keywords
   app.get("/api/keywords", async (_req, res) => {
     try {
       const keywords = await storage.getSavedKeywords();
@@ -223,7 +178,6 @@ export async function registerRoutes(
     }
   });
 
-  // Save a new keyword
   app.post("/api/keywords", async (req, res) => {
     try {
       const validationResult = insertSavedKeywordSchema.safeParse(req.body);
@@ -245,7 +199,6 @@ export async function registerRoutes(
     }
   });
 
-  // Delete a saved keyword
   app.delete("/api/keywords/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
@@ -267,7 +220,6 @@ export async function registerRoutes(
     }
   });
 
-  // Get ranking history for a keyword
   app.get("/api/keywords/:id/history", async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
@@ -290,7 +242,6 @@ export async function registerRoutes(
     }
   });
 
-  // Check ranking for a saved keyword and save to history
   app.post("/api/keywords/:id/check", async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
@@ -309,10 +260,9 @@ export async function registerRoutes(
         });
       }
 
-      const searchResult = await searchSerper(keyword.keyword, "current");
+      const searchResult = await searchSerper(keyword.keyword, "none");
       const result = findWebsitePosition(searchResult, keyword.websiteUrl);
 
-      // Save to history
       const historyRecord = await storage.createRankingHistory({
         keywordId: id,
         position: result.position,

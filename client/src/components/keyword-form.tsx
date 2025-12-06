@@ -1,12 +1,10 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Search, Globe, Calendar, ArrowRight, Loader2 } from "lucide-react";
+import { Search, Globe, Clock, ArrowRight, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import {
   Form,
   FormControl,
@@ -22,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { batchKeywordSchema, type BatchKeywordInput, type TimeRange, COUNTRY_LIST } from "@shared/schema";
+import { batchKeywordSchema, type BatchKeywordInput, COUNTRY_LIST, TIME_FRAME_OPTIONS } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -38,12 +36,10 @@ export function KeywordForm({ onSubmit, isLoading = false }: KeywordFormProps) {
       keywords: "",
       websiteUrl: "",
       country: "us",
-      compareEnabled: false,
-      compareTimeRange: "week",
+      timeFrame: "none",
     },
   });
 
-  const compareEnabled = form.watch("compareEnabled");
   const keywordsValue = form.watch("keywords");
   const keywordCount = keywordsValue
     .split("\n")
@@ -138,7 +134,7 @@ export function KeywordForm({ onSubmit, isLoading = false }: KeywordFormProps) {
                               {field.value && (
                                 <span className="flex items-center gap-2">
                                   <span className="uppercase font-medium text-xs">{field.value}</span>
-                                  {COUNTRY_LIST.find(c => c.code === field.value)?.name} ({field.value})
+                                  {COUNTRY_LIST.find(c => c.code === field.value)?.name}
                                 </span>
                               )}
                             </SelectValue>
@@ -154,7 +150,7 @@ export function KeywordForm({ onSubmit, isLoading = false }: KeywordFormProps) {
                               >
                                 <span className="flex items-center gap-2">
                                   <span className="uppercase font-medium text-xs w-6">{country.code}</span>
-                                  {country.name} ({country.code})
+                                  {country.name}
                                 </span>
                               </SelectItem>
                             ))}
@@ -166,58 +162,44 @@ export function KeywordForm({ onSubmit, isLoading = false }: KeywordFormProps) {
                   )}
                 />
 
-                <div className="space-y-4 p-4 rounded-lg bg-muted/30 border border-border">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <Label htmlFor="compare-mode" className="text-sm font-medium cursor-pointer">
-                        Compare with Previous Period
-                      </Label>
-                    </div>
-                    <FormField
-                      control={form.control}
-                      name="compareEnabled"
-                      render={({ field }) => (
-                        <Switch
-                          id="compare-mode"
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                          data-testid="switch-compare-mode"
-                        />
-                      )}
-                    />
-                  </div>
-
-                  {compareEnabled && (
-                    <FormField
-                      control={form.control}
-                      name="compareTimeRange"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm">Compare Time Range</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
+                <FormField
+                  control={form.control}
+                  name="timeFrame"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        Time Frame
+                        <Badge variant="secondary" className="text-xs">tbs</Badge>
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger 
+                            className="h-11"
+                            data-testid="select-time-frame"
                           >
-                            <FormControl>
-                              <SelectTrigger 
-                                className="h-11"
-                                data-testid="select-compare-time-range"
-                              >
-                                <SelectValue placeholder="Select time range" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="week">Past Week</SelectItem>
-                              <SelectItem value="month">Past Month</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                            <SelectValue placeholder="Select time frame" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {TIME_FRAME_OPTIONS.map((option) => (
+                            <SelectItem 
+                              key={option.value} 
+                              value={option.value}
+                              data-testid={`select-time-frame-${option.value}`}
+                            >
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </div>
+                />
               </div>
             </div>
 
