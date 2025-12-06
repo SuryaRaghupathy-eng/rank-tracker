@@ -31,6 +31,9 @@ async function searchSerper(keyword: string, timeRange?: TimeRange, country?: st
     payload.gl = country;
   }
 
+  console.log(`Serper API Request - Keyword: "${keyword}", TimeRange: ${timeRange}, Country: ${country}, TBS: ${tbs}`);
+  console.log(`Payload: ${JSON.stringify(payload)}`);
+
   const response = await fetch("https://google.serper.dev/search", {
     method: "POST",
     headers: {
@@ -44,7 +47,13 @@ async function searchSerper(keyword: string, timeRange?: TimeRange, country?: st
     throw new Error(`Serper API error: ${response.status} ${response.statusText}`);
   }
 
-  return response.json();
+  const result = await response.json();
+  console.log(`Serper API Response - Results count: ${result.organic?.length || 0}`);
+  if (result.organic && result.organic.length > 0) {
+    console.log(`First 3 results: ${result.organic.slice(0, 3).map((r: any) => r.link).join(', ')}`);
+  }
+  
+  return result;
 }
 
 function normalizeUrl(url: string): string {
