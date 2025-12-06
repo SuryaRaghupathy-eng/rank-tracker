@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, History } from "lucide-react";
+import { Link } from "wouter";
 import { KeywordForm } from "@/components/keyword-form";
 import { RankingResults } from "@/components/ranking-results";
 import { StatsCards } from "@/components/stats-cards";
+import { SavedKeywords } from "@/components/saved-keywords";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { BatchKeywordInput, RankingResult } from "@shared/schema";
@@ -57,7 +60,15 @@ export default function Home() {
                 </p>
               </div>
             </div>
-            <ThemeToggle />
+            <div className="flex items-center gap-2">
+              <Link href="/history">
+                <Button variant="outline" size="sm" data-testid="link-history">
+                  <History className="h-4 w-4 mr-2" />
+                  History
+                </Button>
+              </Link>
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       </header>
@@ -76,18 +87,25 @@ export default function Home() {
             isLoading={checkRankingsMutation.isPending}
           />
 
-          {(results.length > 0 || checkRankingsMutation.isPending) && (
-            <div className="space-y-6">
-              {results.length > 0 && (
-                <StatsCards results={results} compareEnabled={compareEnabled} />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
+              {(results.length > 0 || checkRankingsMutation.isPending) && (
+                <>
+                  {results.length > 0 && (
+                    <StatsCards results={results} compareEnabled={compareEnabled} />
+                  )}
+                  <RankingResults
+                    results={results}
+                    isLoading={checkRankingsMutation.isPending}
+                    compareEnabled={compareEnabled}
+                  />
+                </>
               )}
-              <RankingResults
-                results={results}
-                isLoading={checkRankingsMutation.isPending}
-                compareEnabled={compareEnabled}
-              />
             </div>
-          )}
+            <div className="lg:col-span-1">
+              <SavedKeywords />
+            </div>
+          </div>
         </div>
       </main>
 

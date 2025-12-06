@@ -1,4 +1,5 @@
-import { TrendingUp, TrendingDown, Minus, ExternalLink, Search, AlertCircle, Bookmark, Loader2 } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, ExternalLink, Search, AlertCircle, Bookmark, Loader2, Download, FileText } from "lucide-react";
+import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -118,11 +119,118 @@ function EmptyState() {
   );
 }
 
+function escapeCSV(value: string): string {
+  if (value.includes('"') || value.includes(',') || value.includes('\n')) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+function exportResultsToCSV(results: RankingResult[]) {
+  const rows: string[] = ["Keyword,Website URL,Position,Title,Checked At"];
+  
+  results.forEach((result) => {
+    rows.push(
+      `${escapeCSV(result.keyword)},${escapeCSV(result.websiteUrl)},${result.currentPosition ?? "Not Found"},${escapeCSV(result.title ?? "")},${escapeCSV(result.checkedAt)}`
+    );
+  });
+  
+  const csv = rows.join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `ranking-results-${format(new Date(), "yyyy-MM-dd")}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function escapeHTML(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function exportResultsToPDF(results: RankingResult[]) {
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) return;
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Ranking Results Report</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        h1 { color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f4f4f4; }
+        .not-found { color: #999; }
+      </style>
+    </head>
+    <body>
+      <h1>Ranking Results Report</h1>
+      <p>Generated on ${format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Keyword</th>
+            <th>Website URL</th>
+            <th>Position</th>
+            <th>Title</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${results.map(r => `
+            <tr>
+              <td>${escapeHTML(r.keyword)}</td>
+              <td>${escapeHTML(r.websiteUrl)}</td>
+              <td>${r.currentPosition ? `#${r.currentPosition}` : '<span class="not-found">Not Found</span>'}</td>
+              <td>${escapeHTML(r.title ?? '-')}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </body>
+    </html>
+  `;
+  
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.print();
+}
+
 export function RankingResults({
   results,
   isLoading = false,
   compareEnabled = false,
 }: RankingResultsProps) {
+  const { toast } = useToast();
+  
+  const saveKeywordMutation = useMutation({
+    mutationFn: async (data: { keyword: string; websiteUrl: string }) => {
+      const response = await apiRequest("POST", "/api/keywords", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/keywords"] });
+      toast({
+        title: "Keyword Saved",
+        description: "The keyword has been saved for tracking.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save keyword. It may already be saved.",
+        variant: "destructive",
+      });
+    },
+  });
   if (isLoading) {
     return (
       <Card className="border-card-border">
@@ -165,6 +273,24 @@ export function RankingResults({
               {notFoundResults.length} not ranked
             </Badge>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportResultsToCSV(results)}
+            data-testid="button-export-results-csv"
+          >
+            <Download className="h-4 w-4 mr-1" />
+            CSV
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportResultsToPDF(results)}
+            data-testid="button-export-results-pdf"
+          >
+            <FileText className="h-4 w-4 mr-1" />
+            PDF
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
@@ -191,6 +317,9 @@ export function RankingResults({
                     </TableHead>
                   </>
                 )}
+                <TableHead className="w-20 text-center font-semibold text-xs uppercase tracking-wide">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -252,6 +381,26 @@ export function RankingResults({
                       </TableCell>
                     </>
                   )}
+                  <TableCell className="py-4">
+                    <div className="flex justify-center">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => saveKeywordMutation.mutate({
+                          keyword: result.keyword,
+                          websiteUrl: result.websiteUrl
+                        })}
+                        disabled={saveKeywordMutation.isPending}
+                        data-testid={`button-save-${index}`}
+                      >
+                        {saveKeywordMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Bookmark className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
